@@ -9,8 +9,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
-os.environ.setdefault("REDIS_URL", "")
-os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+# Container runs inherit the live Redis URL; tests must never populate its cache
+# or alter the running application's login counters.
+os.environ["REDIS_URL"] = ""
+os.environ["RATE_LIMIT_ENABLED"] = "false"
 
 from app.db.schema import metadata
 from app.db.deps import get_db

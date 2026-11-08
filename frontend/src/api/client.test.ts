@@ -10,6 +10,21 @@ describe("api client", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("aborts a stalled login request so the UI can offer a retry", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn((_url: string, init: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () => reject(new DOMException("Timed out", "AbortError")));
+      })
+    ));
+    const request = api("/auth/login/", { method: "POST", body: { email: "demo" } });
+    const assertion = expect(request).rejects.toMatchObject({ name: "AbortError" });
+    await vi.advanceTimersByTimeAsync(20_000);
+    await assertion;
   });
 
   it("refreshes token on first 401 and retries request", async () => {

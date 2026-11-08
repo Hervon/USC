@@ -6,6 +6,17 @@ export const SESSION_EXPIRED_EVENT = "usc:session-expired";
 let lastSessionExpiredEventAt = 0;
 let refreshInFlight: Promise<string | null> | null = null;
 const ACCESS_REFRESH_SKEW_SECONDS = 20;
+const REQUEST_TIMEOUT_MS = 20_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export class ApiError extends Error {
   status: number;
@@ -64,7 +75,7 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refresh) return null;
 
   refreshInFlight = (async () => {
-    const res = await fetch(`${API_BASE}/auth/token/refresh/`, {
+    const res = await fetchWithTimeout(`${API_BASE}/auth/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh }),
@@ -145,7 +156,7 @@ async function apiInternal<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetchWithTimeout(`${API_BASE}${path}`, {
     method,
     headers,
     body: opts?.body ? JSON.stringify(opts.body) : undefined,

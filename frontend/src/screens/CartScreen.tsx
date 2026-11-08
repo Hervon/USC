@@ -70,7 +70,7 @@ export default function CartScreen({
     []
   );
   const hasOnboardingDemo = onboardingDemoMode && items.length === 0;
-  const visibleItems = hasOnboardingDemo ? [demoItem] : items;
+  const visibleItems = useMemo(() => hasOnboardingDemo ? [demoItem] : items, [hasOnboardingDemo, demoItem, items]);
   const visibleTotal = hasOnboardingDemo ? demoItem.product.price * demoItem.qty : total;
   const itemsCount = useMemo(() => visibleItems.reduce((acc, it) => acc + it.qty, 0), [visibleItems]);
   const canCheckout = !creating && itemsCount > 0 && Boolean(buyerCompanyId);
@@ -418,5 +418,4 @@ export default function CartScreen({
     </section>
   );
 }
-
 
